@@ -39,8 +39,8 @@ def load_model():
     shap_values_all_sample = load('shap_values_all_sample.joblib')    # contient toutes les shap values calculées en off-line
     
 
-class ClientData(BaseModel):
-    data: list[float]
+# class ClientData(BaseModel):
+    # data: list[float]
 
  # ...
 
