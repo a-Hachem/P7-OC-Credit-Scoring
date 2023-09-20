@@ -30,12 +30,11 @@ async def root():
 
 @app.on_event('startup')                    # charger le modèle et les données au démarrage de l'application
 def load_model():       
-    global clf_model, shap_model, data_df, df_result, shap_values_all_sample
+    global clf_model, shap_model, data_df, shap_values_all_sample
     # clf_model = load('LGB_shap.joblib')   # modèle lightgbm
     clf_model = load('XGB2s.joblib')        # modèle xgboost
     shap_model = load('explainer.joblib')   # modèle calculant la shap value
-    data_df = load("df_validation.joblib")  # contient les données de validation
-    df_result = load("df_val.joblib")       # contient les données de validation + prédition des prabas réalisées en offline
+    data_df = load('df_val.joblib')         # contient les données de validation + prédition des prabas réalisées en offline      
     shap_values_all_sample = load('shap_values_all_sample.joblib')    # contient toutes les shap values calculées en off-line
     
 
@@ -48,7 +47,7 @@ def load_model():
 async def get_prediction(client_id: int):
    
     # Filtrage du dataframe : retenir la ligne du client et les colonnes des features
-    features = data_df.columns.drop(["SK_ID_CURR", "target"])
+    features = data_df.columns.drop(["SK_ID_CURR", "target", "y_probs"])
     input_data = data_df[data_df["SK_ID_CURR"]==int(client_id)]
     input_data = input_data[features]
     
@@ -73,7 +72,7 @@ async def get_prediction(client_id: int):
 async def get_prediction_prob(client_id: int):
     
     # Filtrage du dataframe : retenir la ligne du client et les colonnes des features
-    features = data_df.columns.drop(["SK_ID_CURR", "target"])
+    features = data_df.columns.drop(["SK_ID_CURR", "target", "y_probs"])
     input_data = data_df[data_df["SK_ID_CURR"]==int(client_id)]
     input_data = input_data[features]
     
@@ -119,8 +118,8 @@ async def similar_client(client_id: int):
     proba_json = await get_prediction_prob(client_id)
     proba = float(proba_json["prediction_prob"])   
     
-    df_result['diff_probas'] = abs(df_result["y_probs"] - proba)
-    df = df_result.drop(['target'], axis=1)
+    df = data_df.drop(['target'], axis=1)
+    df ['diff_probas'] = abs(df["y_probs"] - proba)    
     df = df.sort_values(by='diff_probas', ascending=True)
     
     # ========== Code pour retenir et renvoyer les 5 plus proches clients ==================================================
@@ -137,7 +136,7 @@ async def similar_client(client_id: int):
 async def get_shap_value (client_id: int):
     # Filtrage du dataframe : retenir la ligne du client et les colonnes des features
     features = data_df.columns
-    features = features.drop(["SK_ID_CURR", "target"])
+    features = features.drop(["SK_ID_CURR", "target", "y_probs"])
     input_data = data_df[data_df["SK_ID_CURR"]==int(client_id)]
     input_data = input_data[features]
 
